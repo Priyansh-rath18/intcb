@@ -16,11 +16,18 @@ app.use(express.static("public"));
 const genAI = new GoogleGenerativeAI("AIzaSyDt5fYfAIbBu1YjrdL1sdHRAECS1UnYFVs");
 
 // ☎️ Twilio setup (hardcoded for now)
-const accountSid = "ACaf4eaea2623629c862002c6f325ada33";
-const authToken = "85ae55a65e1e697ac8b34d00a72112e7";
-const twilioNumber = "+19802762434"; // Your purchased Twilio number
-const agentNumber = "+17622488436"; // Agent / your personal number
-const client = twilio(accountSid, authToken);
+const accountSid = "ACaf4eaea2623629c862002c6f325ada33"; // 👈 Your Account SID from Twilio console
+const authToken = "85ae55a65e1e697ac8b34d00a72112e7";   // 👈 Your Auth Token from Twilio console
+const twilioNumber = "+19802762434"; // 👈 Your Twilio purchased number
+const agentNumber = "+17622488436";  // 👈 Number to forward the call to
+
+let client;
+try {
+  client = twilio(accountSid, authToken);
+  console.log("✅ Twilio client initialized successfully");
+} catch (err) {
+  console.error("❌ Failed to initialize Twilio client:", err.message);
+}
 
 // 📂 Multer for uploads
 const upload = multer({ dest: "uploads/" });
@@ -53,7 +60,7 @@ app.post("/ask", async (req, res) => {
     const result = await model.generateContent(buildPrompt(language, userText));
     res.json({ reply: result.response.text() });
   } catch (err) {
-    console.error(err);
+    console.error("Gemini Error:", err);
     res.status(500).json({ error: "Failed to get response" });
   }
 });
@@ -81,7 +88,7 @@ app.post("/ask-image", upload.single("image"), async (req, res) => {
     fs.unlinkSync(filePath); // cleanup
     res.json({ reply: result.response.text() });
   } catch (err) {
-    console.error(err);
+    console.error("Gemini Image Error:", err);
     res.status(500).json({ error: "Failed to process image" });
   }
 });
@@ -89,15 +96,27 @@ app.post("/ask-image", upload.single("image"), async (req, res) => {
 // 📌 Twilio Call
 app.post("/make-call", async (req, res) => {
   try {
+    console.log("☎ Attempting call with:", { from: twilioNumber, to: agentNumber });
+
     const call = await client.calls.create({
-      url: "http://demo.twilio.com/docs/voice.xml", // You can replace with your custom TwiML
+      url: "http://demo.twilio.com/docs/voice.xml", // replace with custom TwiML later
       to: agentNumber,
       from: twilioNumber,
     });
 
+    console.log("✅ Call started successfully. Call SID:", call.sid);
     res.json({ success: true, callSid: call.sid });
   } catch (err) {
-    console.error("Twilio Error:", err);
+    console.error("❌ Twilio Error:", err.message);
+
+    if (err.code === 20003) {
+      console.error("🔑 Check your Account SID and Auth Token. Authentication failed.");
+    } else if (err.code === 21212) {
+      console.error("📞 Invalid 'From' number. Is your Twilio number correct and SMS/Voice enabled?");
+    } else if (err.code === 21211) {
+      console.error("📞 Invalid 'To' number. Make sure it's in E.164 format (+countrycode...).");
+    }
+
     res.status(500).json({ success: false, error: err.message });
   }
 });
