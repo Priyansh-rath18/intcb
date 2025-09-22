@@ -4,6 +4,7 @@
   "main": "app.js",
   "dependencies": {
     "express": "^5.1.0",
+    "twilio": "^4.22.0",
     "multer": "^2.0.2",
     "@google/generative-ai": "^0.24.1",
     "ejs": "^3.1.10"
