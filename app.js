@@ -3,11 +3,12 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const twilio = require("twilio");
 
 const app = express();
 const port = 3000;
 
-// 🔑 Your Gemini API Key
+// ---------------- GEMINI CONFIG ----------------
 const genAI = new GoogleGenerativeAI("AIzaSyDt5fYfAIbBu1YjrdL1sdHRAECS1UnYFVs");
 
 // Middleware
@@ -40,7 +41,6 @@ function buildPrompt(language, userText) {
 app.post("/ask", async (req, res) => {
   try {
     const { userText, language } = req.body;
-
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 
     const result = await model.generateContent(buildPrompt(language, userText));
@@ -71,12 +71,37 @@ app.post("/ask-image", upload.single("image"), async (req, res) => {
       imageData,
     ]);
 
-    fs.unlinkSync(filePath); // clean up uploaded file
-
+    fs.unlinkSync(filePath); // cleanup
     res.json({ reply: result.response.text() });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to process image" });
+  }
+});
+
+// ---------------- TWILIO CONFIG ----------------
+// Put your Twilio credentials in environment variables (.env)
+// 🔑 Twilio credentials (HARD-CODED)
+const accountSid = "ACaf4eaea2623629c862002c6f325ada33";   // Your Twilio Account SID
+const authToken = "85ae55a65e1e697ac8b34d00a72112e7";               // Your Twilio Auth Token
+const twilioNumber = "+19802762434";                    // Your Twilio purchased number
+const agentNumber = "+17622488436";                    // The agent’s real mobile/landline
+
+
+const client = twilio(accountSid, authToken);
+
+// 📌 Route to initiate call
+app.post("/call", async (req, res) => {
+  try {
+    const call = await client.calls.create({
+      url: "http://demo.twilio.com/docs/voice.xml", // can be replaced by your own TwiML
+      to: agentNumber,
+      from: twilioNumber,
+    });
+    res.json({ success: true, sid: call.sid });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Call failed" });
   }
 });
 
