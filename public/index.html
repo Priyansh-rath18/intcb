@@ -125,5 +125,30 @@
       }
     }
   </script>
+<div class="call-section">
+  <button id="callButton">📞 Call Krishimitra</button>
+</div>
+
+
+<!-- Twilio SDK -->
+<script src="https://sdk.twilio.com/js/client/v1.13/twilio.min.js"></script>
+<script src="/call.js"></script>
+<script>document.getElementById("callButton").addEventListener("click", async () => {
+  alert("📞 Initiating call to Krishimitra...");
+
+  try {
+    const res = await fetch("/make-call", { method: "POST" });
+    const data = await res.json();
+    if (data.success) {
+      alert("✅ Call started! Check your phone.");
+    } else {
+      alert("⚠ Failed to start call: " + data.error);
+    }
+  } catch (err) {
+    alert("❌ Error starting call: " + err.message);
+  }
+});
+</script>
+  
 </body>
 </html>
