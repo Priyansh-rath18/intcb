@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🌿 KRISHIMITRA</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .loading {
+      display: none;
+      font-style: italic;
+      color: yellow;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌿 KRISHIMITRA</h1>
+    <p>Chat with Krishimitra using <b>Text</b> or <b>Image + Text</b></p>
+
+    <!-- Text Chat -->
+    <h3>📝 Ask with Text</h3>
+    <label for="textLanguage">Select Language:</label>
+    <select id="textLanguage">
+      <option value="Hindi">Hindi</option>
+        <option value="English">English</option>
+        <option value="Marathi">Marathi</option>
+        <option value="Punjabi">Punjabi</option>
+        <option value="Kannada">Kannada</option>
+        <option value="Malyalam">Malyalam</option>
+        <option value="Bhojpuri">Bhojpuri</option>
+        <option value="Gujarati">Gujarati</option>
+        <option value="Telugu">Telugu</option>
+    </select>
+    <textarea id="userText" placeholder="Type your question..."></textarea>
+    <button onclick="askText()">Send</button>
+
+    <!-- Image + Text Chat -->
+    <h3>🖼 Ask with Image</h3>
+    <label for="imageLanguage">Select Language:</label>
+    <select id="imageLanguage">
+      <option value="Hindi">Hindi</option>
+        <option value="English">English</option>
+        <option value="Marathi">Marathi</option>
+        <option value="Punjabi">Punjabi</option>
+        <option value="Kannada">Kannada</option>
+        <option value="Malyalam">Malyalam</option>
+        <option value="Bhojpuri">Bhojpuri</option>
+        <option value="Gujarati">Gujarati</option>
+        <option value="Telugu">Telugu</option>
+    </select>
+    <input type="file" id="imageFile" accept="image/*">
+    <textarea id="imageText" placeholder="Ask something about the image (optional)..."></textarea>
+    <button onclick="askImage()">Send with Image</button>
+
+    <!-- Bot Response -->
+    <div id="loading" class="loading">⏳ Loading response...</div>
+    <div class="response" id="response">🤖 Response will appear here...</div>
+  </div>
+
+  <script>
+    const responseBox = document.getElementById("response");
+    const loadingBox = document.getElementById("loading");
+
+    // --- Text-only request ---
+    async function askText() {
+      const userText = document.getElementById("userText").value.trim();
+      const language = document.getElementById("textLanguage").value;
+
+      if (!userText) {
+        alert("Please type your question.");
+        return;
+      }
+
+      responseBox.innerText = "";
+      loadingBox.style.display = "block";
+
+      try {
+        const res = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userText, language })
+        });
+
+        const data = await res.json();
+        responseBox.innerText = data.reply || "⚠ No response";
+      } catch (err) {
+        responseBox.innerText = "❌ Error: " + err.message;
+      } finally {
+        loadingBox.style.display = "none";
+      }
+    }
+
+    // --- Image + text request ---
+    async function askImage() {
+      const file = document.getElementById("imageFile").files[0];
+      const userText = document.getElementById("imageText").value.trim();
+      const language = document.getElementById("imageLanguage").value;
+
+      if (!file) {
+        alert("Please upload an image.");
+        return;
+      }
+
+      responseBox.innerText = "";
+      loadingBox.style.display = "block";
+
+      const formData = new FormData();
+      formData.append("image", file);
+      formData.append("userText", userText);
+      formData.append("language", language);
+
+      try {
+        const res = await fetch("/ask-image", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+        responseBox.innerText = data.reply || "⚠ No response";
+      } catch (err) {
+        responseBox.innerText = "❌ Error: " + err.message;
+      } finally {
+        loadingBox.style.display = "none";
+      }
+    }
+  </script>
+</body>
+</html>
