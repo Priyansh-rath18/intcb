@@ -8,17 +8,24 @@ const twilio = require("twilio");
 const app = express();
 const port = 3000;
 
-// ---------------- GEMINI CONFIG ----------------
-const genAI = new GoogleGenerativeAI("AIzaSyDt5fYfAIbBu1YjrdL1sdHRAECS1UnYFVs");
-
-// Middleware
+// 🌐 Middleware
 app.use(express.json());
 app.use(express.static("public"));
 
-// Multer for image uploads
+// 🔑 Gemini setup
+const genAI = new GoogleGenerativeAI("AIzaSyDt5fYfAIbBu1YjrdL1sdHRAECS1UnYFVs");
+
+// ☎️ Twilio setup (hardcoded for now)
+const accountSid = "ACaf4eaea2623629c862002c6f325ada33";
+const authToken = "85ae55a65e1e697ac8b34d00a72112e7";
+const twilioNumber = "+19802762434"; // Your purchased Twilio number
+const agentNumber = "+17622488436"; // Agent / your personal number
+const client = twilio(accountSid, authToken);
+
+// 📂 Multer for uploads
 const upload = multer({ dest: "uploads/" });
 
-// Build prompt with language context
+// 📝 Build prompt for Gemini
 function buildPrompt(language, userText) {
   return `
   You are an AI assistant specialized only in:
@@ -37,7 +44,7 @@ function buildPrompt(language, userText) {
   `;
 }
 
-// 📌 Text-only endpoint
+// 📌 Text-only chatbot
 app.post("/ask", async (req, res) => {
   try {
     const { userText, language } = req.body;
@@ -51,7 +58,7 @@ app.post("/ask", async (req, res) => {
   }
 });
 
-// 📌 Image + text endpoint
+// 📌 Chat with image
 app.post("/ask-image", upload.single("image"), async (req, res) => {
   try {
     const { userText, language } = req.body;
@@ -79,32 +86,23 @@ app.post("/ask-image", upload.single("image"), async (req, res) => {
   }
 });
 
-// ---------------- TWILIO CONFIG ----------------
-// Put your Twilio credentials in environment variables (.env)
-// 🔑 Twilio credentials (HARD-CODED)
-const accountSid = "ACaf4eaea2623629c862002c6f325ada33";   // Your Twilio Account SID
-const authToken = "85ae55a65e1e697ac8b34d00a72112e7";               // Your Twilio Auth Token
-const twilioNumber = "+19802762434";                    // Your Twilio purchased number
-const agentNumber = "+17622488436";                    // The agent’s real mobile/landline
-
-
-const client = twilio(accountSid, authToken);
-
-// 📌 Route to initiate call
-app.post("/call", async (req, res) => {
+// 📌 Twilio Call
+app.post("/make-call", async (req, res) => {
   try {
     const call = await client.calls.create({
-      url: "http://demo.twilio.com/docs/voice.xml", // can be replaced by your own TwiML
+      url: "http://demo.twilio.com/docs/voice.xml", // You can replace with your custom TwiML
       to: agentNumber,
       from: twilioNumber,
     });
-    res.json({ success: true, sid: call.sid });
+
+    res.json({ success: true, callSid: call.sid });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Call failed" });
+    console.error("Twilio Error:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
+// 🚀 Start server
 app.listen(port, () => {
-  console.log(`🚀 Server running at http://localhost:${port}`);
+  console.log(`✅ Server running at http://localhost:${port}`);
 });
